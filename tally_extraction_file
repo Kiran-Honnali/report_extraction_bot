@@ -1,0 +1,228 @@
+import os
+import datetime
+from playwright.sync_api import sync_playwright
+
+# --- CONFIGURATION ---
+PORTAL_URL = "https://ssp.elcom.digital/user-pages/login"
+PORTAL_ID = "ia@kumbhatco.in"
+PORTAL_PASSWORD = "JUAKRXDZ7"
+PORTAL_PIN = "190190"
+
+TALLY_USERNAME = "ia@kumbhatco.in"
+TALLY_PASSWORD = "IAaudit@123"
+
+TARGET_DOWNLOAD_DIR = r"C:\Users\ADMIN\Downloads"
+# ---------------------
+
+def get_month_date_range():
+    """Calculates the From/To reporting period dates for the current active month"""
+    today = datetime.date.today()
+    first_of_month = today.replace(day=1).strftime("%d-%m-%Y")
+    current_day = today.strftime("%d-%m-%Y")
+    return first_of_month, current_day
+
+def extract_from_virtual_tally():
+    from_date, to_date = get_month_date_range()
+    
+    if not os.path.exists(TARGET_DOWNLOAD_DIR):
+        os.makedirs(TARGET_DOWNLOAD_DIR)
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=False)
+        context = browser.new_context(accept_downloads=True)
+        main_page = context.new_page()
+
+        # =========================================================================
+        # PROCESS 1: Open the tab and login using Portal ID, Password, and Secure PIN
+        # =========================================================================
+        print("Process 1: Navigating to Elcom Portal...")
+        main_page.goto(PORTAL_URL, wait_until = "networkidle")
+        main_page.wait_for_timeout(3000)
+        
+        print("Entering credentials...")
+        id_field = main_page.get_by_placeholder("Tally.NET ID")
+        id_field.click()
+        id_field.fill(PORTAL_ID)
+        
+        password_field = main_page.get_by_placeholder("Tally.NET Password")
+        password_field.click()
+        password_field.fill(PORTAL_PASSWORD)
+        
+        pin_field = main_page.get_by_placeholder("Secure PIN")
+        pin_field.click()
+        pin_field.fill(PORTAL_PIN)
+        
+        print("Clicking Orange Login button...")
+        main_page.get_by_role("button", name="Login").or_(main_page.locator('button:has-text("Login")')).first.click()
+
+        # =========================================================================
+        # PROCESS 2: Click the 'Connect' button on the dashboard tab
+        # =========================================================================
+        print("Process 2: Waiting for dashboard to load...")
+        main_page.wait_for_url("**/your-computer", timeout=45000)
+        main_page.wait_for_timeout(3000)
+        
+        print("Clicking 'Connect' and listening for the new streaming tab...")
+        with context.expect_page() as new_page_info:
+            main_page.get_by_role("button", name="Connect").or_(main_page.locator('text="Connect"')).first.click()
+            
+        vdi_page = new_page_info.value
+        vdi_page.bring_to_front()
+        
+        print("Switched to NICE DCV Tab. Waiting for desktop streaming session to load completely...")
+        vdi_page.wait_for_timeout(15000)
+
+        # =========================================================================
+        # PROCESS 3: Opening Tally Edit Log App
+        # =========================================================================
+        print("Process 3: Launching TallyPrime Edit Log via system search shortcut...")
+        vdi_page.mouse.click(500, 400)
+        vdi_page.wait_for_timeout(1000)
+        vdi_page.keyboard.press("Meta")  
+        vdi_page.wait_for_timeout(2000)
+        vdi_page.keyboard.type("TallyPrime Edit Log")
+        vdi_page.wait_for_timeout(2000)
+        vdi_page.keyboard.press("Enter")
+        
+        print("Waiting for Tally application boot timeline...")
+        vdi_page.wait_for_timeout(22000)  
+
+        # =========================================================================
+        # PATH SELECTION: Company Directory Pathing Configuration
+        # =========================================================================
+        print("Navigating Tally storage structures...")
+        vdi_page.keyboard.type("Select from Drive")
+        vdi_page.keyboard.press("Enter")
+        vdi_page.wait_for_timeout(1500)
+        
+        vdi_page.keyboard.type("D:")
+        vdi_page.keyboard.press("Enter")
+        vdi_page.wait_for_timeout(1500)
+        
+        vdi_page.keyboard.type("Shared_Data")
+        vdi_page.keyboard.press("Enter")
+        vdi_page.wait_for_timeout(1500)
+        
+        vdi_page.keyboard.type("Tallyprime")
+        vdi_page.keyboard.press("Enter")
+        vdi_page.wait_for_timeout(1500)
+        
+        vdi_page.keyboard.type("Data")
+        vdi_page.keyboard.press("Enter")
+        vdi_page.wait_for_timeout(2000)
+        
+        vdi_page.keyboard.press("ArrowDown")
+        vdi_page.wait_for_timeout(500)
+        vdi_page.keyboard.press("Enter")
+        vdi_page.wait_for_timeout(4000)
+
+        # =========================================================================
+        # PROCESS 4: Internal Tally System Account Authorization Login
+        # =========================================================================
+        print("Process 4: Submitting internal ledger security authorization database credentials...")
+        vdi_page.keyboard.type(TALLY_USERNAME)
+        vdi_page.keyboard.press("Enter")
+        vdi_page.wait_for_timeout(1000)
+        vdi_page.keyboard.type(TALLY_PASSWORD)
+        vdi_page.keyboard.press("Enter")
+        vdi_page.wait_for_timeout(12000)  
+
+        # =========================================================================
+        # REPORT DRILL DOWN & DYNAMIC CONFIGURATION
+        # =========================================================================
+        print("Navigating to Trial Balance reporting views...")
+        vdi_page.keyboard.press("d")  # Gateway shortcut for 'Display More Reports'
+        vdi_page.wait_for_timeout(2000)
+        vdi_page.keyboard.press("t")  # Gateway shortcut for 'Trial Balance'
+        vdi_page.wait_for_timeout(3000)
+
+        # NEW TASK RULE: Change View to "Trial Balance - MIS"
+        print("Modifying report presentation structure: Changing view to MIS layout...")
+        vdi_page.keyboard.press("Control+h")  # Tally hotkey shortcut for 'Change View'
+        vdi_page.wait_for_timeout(1500)
+        vdi_page.keyboard.type("Trial Balance - MIS")
+        vdi_page.wait_for_timeout(1000)
+        vdi_page.keyboard.press("Enter")
+        vdi_page.wait_for_timeout(2500)
+
+        print(f"Setting target processing window timeline bounds: {from_date} to {to_date}")
+        vdi_page.keyboard.press('Alt+F2')
+        vdi_page.wait_for_timeout(1500)
+        vdi_page.keyboard.type(from_date)
+        vdi_page.keyboard.press('Enter')
+        vdi_page.keyboard.type(to_date)
+        vdi_page.keyboard.press('Enter')
+        vdi_page.wait_for_timeout(5000)  
+
+        # =========================================================================
+        # EXPORT DATA MANIPULATION & INTERFACE HANDLING
+        # =========================================================================
+        print("Initiating local storage staging data dump...")
+        vdi_page.keyboard.press('Alt+E')
+        vdi_page.wait_for_timeout(2000)
+        vdi_page.keyboard.press('Enter')  # Select "Current" report format
+        vdi_page.wait_for_timeout(2000)
+
+        # NEW TASK RULE: Modify filename inside export details sub-panel properties menu
+        print("Adjusting internal export filename structure configurations...")
+        vdi_page.keyboard.press("c")  # Shortcut key to enter 'Configure' menu
+        vdi_page.wait_for_timeout(1500)
+        vdi_page.keyboard.type("File Name")
+        vdi_page.wait_for_timeout(1000)
+        vdi_page.keyboard.press("Enter")
+        vdi_page.wait_for_timeout(1000)
+        
+        # Clear existing default text name and write our customized target data pattern filename
+        target_filename = f"Trial_Balance_MIS_{to_date}.xlsx"
+        # vdi_page.keyboard.press("Control+a")
+        # vdi_page.keyboard.press("Backspace")
+        vdi_page.keyboard.type(target_filename)
+        vdi_page.keyboard.press("Enter")
+        vdi_page.wait_for_timeout(1500)
+        vdi_page.keyboard.press("Control+a") # Drop back out into final export launch panel
+        vdi_page.wait_for_timeout(1500)
+
+        # Trigger internal virtual export generation
+        print("Executing cloud rendering generation export file output process...")
+        vdi_page.keyboard.press('e')
+        vdi_page.wait_for_timeout(8000) # Give Tally time to populate the file into staging folder
+
+        # VIRTUAL STORAGE SYSTEM RETRIEVAL INTERFACE (REFIXED VIA COORD PIPELINE)
+        # =========================================================================
+        print("Process 5: Accessing NICE DCV toolbar wrapper via physical coordinates...")
+        
+        # 1. Click the cloud storage icon in the top toolbar row wrapper
+        vdi_page.mouse.click(25, 40)
+        vdi_page.wait_for_timeout(2500)
+        
+        # 2. Find and explicitly click the text link name "My Files" or "My_Files"
+        print("Locating and clicking 'My Files' text menu item...")
+        vdi_page.get_by_text("My Files", exact=False).or_(
+            vdi_page.locator('text="My_Files"')
+        ).first.click()
+        vdi_page.wait_for_timeout(2000)
+        
+        # 3. Find and explicitly click the text folder name "Export"
+        print("Locating and clicking 'Export' folder option...")
+        vdi_page.get_by_text("Export", exact=True).first.click()
+        vdi_page.wait_for_timeout(2000)
+        
+        # 4. Target the specific dynamic filename element to open the file download capture stream
+        print(f"Triggering direct text click download for file target: {target_filename}")
+        with vdi_page.expect_download() as download_info:
+            vdi_page.get_by_text(target_filename, exact=False).first.click()
+            
+        download = download_info.value
+        final_file_path = os.path.join(TARGET_DOWNLOAD_DIR, target_filename)
+        download.save_as(final_file_path)
+        
+        print(f"\nCompleted successfully! File securely dropped here: {final_file_path}")
+        
+        context.close()
+        browser.close()
+
+if __name__ == "__main__":
+    try:
+        extract_from_virtual_tally()
+    except Exception as e:
+        print(f"\nAutomation halted due to error: {str(e)}")
