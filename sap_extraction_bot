@@ -29,10 +29,9 @@ def run_complete_sap_flow():
         print("1. Navigating to the System Tray...")
         pyautogui.hotkey('win', 'b')
         time.sleep(0.5)
-        pyautogui.press('space')
 
         print("2. Moving right 4 times to highlight the Sophos menu arrow...")
-        for _ in range(3):
+        for _ in range(4):
             pyautogui.press('right')
             time.sleep(0.2) 
 
@@ -41,7 +40,6 @@ def run_complete_sap_flow():
         time.sleep(2) 
 
         print("4. Looking for the Sophos Tray Icon via image recognition...")
-        # We still use the icon image here just to open the Sophos panel
         try:
             sophos_pos = pyautogui.locateOnScreen('sophos_icon.png', confidence=0.8)
             if sophos_pos:
@@ -53,20 +51,16 @@ def run_complete_sap_flow():
             print("Could not find tray icon visually. Pressing Enter as a keyboard fallback...")
             pyautogui.press('enter')
             
-        time.sleep(3) # Wait for Sophos window to physically exist
+        time.sleep(3) # Wait for Sophos window to physically exist and gain focus natively
 
-        print("5. Maximizing Sophos Window to gain focus...")
-        maximize_window("Sophos Connect")
-        time.sleep(1)
-
-        print("6. Navigating to the blue 'Connect' button via Tab...")
+        print("5. Navigating to the blue 'Connect' button via Tab...")
         # Tabbing twice hits the main "Connect" button in the Sophos layout frame
         pyautogui.press('tab')
         time.sleep(0.3)
         pyautogui.press('tab')
         time.sleep(0.5)
 
-        print("7. Action: Space (Triggering the Connect button)...")
+        print("6. Action: Space (Triggering the Connect button)...")
         pyautogui.press('space')
 
         print(f"Waiting exactly {VPN_DELAY} seconds for VPN network to stabilize...")
@@ -74,33 +68,34 @@ def run_complete_sap_flow():
 
 
         # --- STAGE 2: LAUNCH, MAXIMIZE, AND LOG INTO SAP GUI ---
-        print("8. Opening the App (SAP Logon)...")
+        print("7. Opening the App (SAP Logon)...")
         sap_path = r"C:\Program Files (x86)\SAP\FrontEnd\SAPgui\saplogon.exe"
         subprocess.Popen(sap_path)
         time.sleep(3)
         
+        # Only SAP Logon maximizes here
         maximize_window("SAP Logon")
         time.sleep(2)
 
-        print("9. Action: Enter (Opens the default SAP system connection)")
+        print("8. Action: Enter (Opens the default SAP system connection)")
         pyautogui.press("enter")
         time.sleep(4)
         
         maximize_window("SAP")
 
-        print("10. Action: Entering User ID...")
+        print("9. Action: Entering User ID...")
         pyautogui.write(SAP_USER, interval=0.1) 
         time.sleep(1)
 
-        print("11. Action: Tab")
+        print("10. Action: Tab")
         pyautogui.press("tab")
         time.sleep(1)
 
-        print("12. Action: Entering Password...")
+        print("11. Action: Entering Password...")
         pyautogui.write(SAP_PASSWORD, interval=0.1)
         time.sleep(1)
 
-        print("13. Action: Enter (Logging into the SAP environment)")
+        print("12. Action: Enter (Logging into the SAP environment)")
         pyautogui.press("enter")
         
         print("Waiting for SAP Home Screen to load...")
@@ -108,11 +103,11 @@ def run_complete_sap_flow():
         
         maximize_window("SAP Easy Access")
 
-        print("14. Action: Entering Transaction Code 'Zsal_reg'...")
+        print("13. Action: Entering Transaction Code 'Zsal_reg'...")
         pyautogui.write("Zsal_reg", interval=0.1)
         time.sleep(1)
 
-        print("15. Action: Enter (Executing Transaction)...")
+        print("14. Action: Enter (Executing Transaction)...")
         pyautogui.press("enter")
         
         print("Flow execution successful! Zero image dependencies for the connection step.")
