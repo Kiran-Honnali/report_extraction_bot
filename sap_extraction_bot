@@ -1,68 +1,63 @@
-from playwright.sync_api import sync_playwright
+import subprocess
+import pyautogui
 import time
 
-def run_sap_login_flow():
-    # 1. Initialize the Playwright engine explicitly
-    pw = sync_playwright().start()
-    
-    print("Opening the App (Launching Browser)...")
-    # Launch Chromium maximized and visible
-    browser = pw.chromium.launch(headless=False, args=["--start-maximized"])
-    context = browser.new_context(viewport=None)
-    page = context.new_page()
+# ==========================================
+# CONFIGURATION: STORE YOUR CREDENTIALS HERE
+# ==========================================
+SAP_USER = "YOUR_USER_ID"        # <-- Put your SAP Username here
+SAP_PASSWORD = "YOUR_PASSWORD"  # <-- Put your SAP Password here
+# ==========================================
 
+def run_sap_desktop_flow():
     try:
-        # URL PLACEHOLDER: Replace this link with your actual SAP Web address
-        sap_url = "https://your-company-sap-fiori-url.com"
-        page.goto(sap_url)
+        print("1. Opening the App (SAP Logon)...")
+        # Opens the native SAP Desktop application executable path
+        sap_path = r"C:\Program Files (x86)\SAP\FrontEnd\SAPgui\saplogon.exe"
+        subprocess.Popen(sap_path)
         
-        # Wait for the initial page layout to settle
-        page.wait_for_load_state("domcontentloaded")
-        time.sleep(5) 
+        # Give the SAP Logon Pad window 5 seconds to open up completely
+        time.sleep(5)
 
-        print("Action: Enter (To focus or bypass initial splash page)")
-        page.keyboard.press("Enter")
-        time.sleep(2)
-
-        print("Action: Typing User ID...")
-        # Replace 'YOUR_USER_ID' with your actual SAP username
-        page.keyboard.type("YOUR_USER_ID", delay=100) 
-        time.sleep(1)
-
-        print("Action: Tab")
-        page.keyboard.press("Tab")
-        time.sleep(1)
-
-        print("Action: Typing Password...")
-        # Replace 'YOUR_PASSWORD' with your actual SAP password
-        page.keyboard.type("YOUR_PASSWORD", delay=100)
-        time.sleep(1)
-
-        print("Action: Enter (Logging into SAP)")
-        page.keyboard.press("Enter")
+        print("2. Action: Enter (Opens the default SAP system connection)")
+        pyautogui.press("enter")
         
-        # Wait for the main SAP screen/command field to fully load after logging in
-        print("Waiting for SAP Home Command area to load...")
+        # Wait for the actual SAP Client Login screen to display
+        time.sleep(4)
+
+        print("3. Action: Entering User ID...")
+        # Uses the SAP_USER variable defined above
+        pyautogui.write(SAP_USER, interval=0.1) 
+        time.sleep(1)
+
+        print("4. Action: Tab (Moves cursor to Password field)")
+        pyautogui.press("tab")
+        time.sleep(1)
+
+        print("5. Action: Entering Password...")
+        # Uses the SAP_PASSWORD variable defined above
+        pyautogui.write(SAP_PASSWORD, interval=0.1)
+        time.sleep(1)
+
+        print("6. Action: Enter (Logging into the environment)")
+        pyautogui.press("enter")
+        
+        # Give the SAP home dashboard time to load up completely
+        print("Waiting for SAP Home Screen to load...")
         time.sleep(8) 
 
-        print("Action: Typing Transaction Code 'Zsal_reg'...")
-        page.keyboard.type("Zsal_reg", delay=100)
+        print("7. Action: Entering Transaction Code 'Zsal_reg'...")
+        pyautogui.write("Zsal_reg", interval=0.1)
         time.sleep(1)
 
-        print("Action: Enter (Executing Transaction)...")
-        page.keyboard.press("Enter")
+        print("8. Action: Enter (Executing Transaction)...")
+        pyautogui.press("enter")
         
-        print("Flow complete! You are now inside the Zsal_reg transaction screen.")
-        time.sleep(5) # Keeps the window open briefly to view the screen
+        print("Flow complete! You are now physically inside the Zsal_reg desktop screen.")
+        time.sleep(5)
 
     except Exception as e:
-        print(f"An error occurred during execution: {str(e)}")
-        
-    finally:
-        print("Closing browser session...")
-        context.close()
-        browser.close()
-        pw.stop()
+        print(f"An error occurred: {str(e)}")
 
 if __name__ == "__main__":
-    run_sap_login_flow()
+    run_sap_desktop_flow()
