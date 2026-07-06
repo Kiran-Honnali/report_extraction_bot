@@ -3,61 +3,93 @@ import pyautogui
 import time
 
 # ==========================================
-# CONFIGURATION: STORE YOUR CREDENTIALS HERE
+# CONFIGURATION: STORE YOUR SAP CREDENTIALS
 # ==========================================
-SAP_USER = "YOUR_USER_ID"        # <-- Put your SAP Username here
-SAP_PASSWORD = "YOUR_PASSWORD"  # <-- Put your SAP Password here
+SAP_USER = "YOUR_SAP_USER_ID"        
+SAP_PASSWORD = "YOUR_SAP_PASSWORD"  
 # ==========================================
 
-def run_sap_desktop_flow():
+def run_complete_sap_flow():
     try:
-        print("1. Opening the App (SAP Logon)...")
-        # Opens the native SAP Desktop application executable path
+        # --- STAGE 1: CONNECT SOPHOS VPN VIA SCREEN CLICKS ---
+        print("1. Opening the Windows System Tray...")
+        # Press Win + B to focus the taskbar system tray, then press Space to open it
+        pyautogui.hotkey('win', 'b')
+        time.sleep(0.5)
+        pyautogui.press('space')
+        time.sleep(2) # Wait for the tray icons popup to show
+
+        print("2. Looking for the Sophos Tray Icon on screen...")
+        try:
+            # Locate the small Sophos icon inside the opened tray
+            sophos_pos = pyautogui.locateOnScreen('sophos_icon.png', confidence=0.8)
+            if sophos_pos:
+                pyautogui.click(sophos_pos)
+                print("Sophos window popped up successfully.")
+            else:
+                raise Exception("Sophos icon image missing from view context.")
+        except Exception:
+            print("Could not find icon via image recognition. Trying manual fallback click...")
+            # Fallback: Click near your usual screen position or let user adjust coordinates
+            # pyautogui.click(x=1200, y=1000) 
+            pass
+            
+        time.sleep(3) # Give the main Sophos dashboard window time to render
+
+        print("3. Visualizing and clicking the 'Connect' button...")
+        try:
+            connect_pos = pyautogui.locateOnScreen('connect_btn.png', confidence=0.8)
+            pyautogui.click(connect_pos)
+            print("Connect button clicked!")
+        except Exception as e:
+            print("Could not locate the Connect button image. Ensure it is not covered up.")
+            raise e
+
+        # Wait 10 seconds to allow the VPN tunnel handshake to finish
+        print("Waiting for VPN network stabilization...")
+        time.sleep(10)
+
+
+        # --- STAGE 2: LAUNCH AND LOG INTO SAP GUI ---
+        print("4. Opening the App (SAP Logon)...")
         sap_path = r"C:\Program Files (x86)\SAP\FrontEnd\SAPgui\saplogon.exe"
         subprocess.Popen(sap_path)
-        
-        # Give the SAP Logon Pad window 5 seconds to open up completely
         time.sleep(5)
 
-        print("2. Action: Enter (Opens the default SAP system connection)")
+        print("5. Action: Enter (Opens the default SAP system connection)")
         pyautogui.press("enter")
-        
-        # Wait for the actual SAP Client Login screen to display
         time.sleep(4)
 
-        print("3. Action: Entering User ID...")
-        # Uses the SAP_USER variable defined above
+        print("6. Action: Entering User ID...")
         pyautogui.write(SAP_USER, interval=0.1) 
         time.sleep(1)
 
-        print("4. Action: Tab (Moves cursor to Password field)")
+        print("7. Action: Tab")
         pyautogui.press("tab")
         time.sleep(1)
 
-        print("5. Action: Entering Password...")
-        # Uses the SAP_PASSWORD variable defined above
+        print("8. Action: Entering Password...")
         pyautogui.write(SAP_PASSWORD, interval=0.1)
         time.sleep(1)
 
-        print("6. Action: Enter (Logging into the environment)")
+        print("9. Action: Enter (Logging into the environment)")
         pyautogui.press("enter")
         
-        # Give the SAP home dashboard time to load up completely
         print("Waiting for SAP Home Screen to load...")
         time.sleep(8) 
 
-        print("7. Action: Entering Transaction Code 'Zsal_reg'...")
+        print("10. Action: Entering Transaction Code 'Zsal_reg'...")
         pyautogui.write("Zsal_reg", interval=0.1)
         time.sleep(1)
 
-        print("8. Action: Enter (Executing Transaction)...")
+        print("11. Action: Enter (Executing Transaction)...")
         pyautogui.press("enter")
         
-        print("Flow complete! You are now physically inside the Zsal_reg desktop screen.")
+        print("Flow completely finished! You are inside Zsal_reg over the secure VPN.")
         time.sleep(5)
 
     except Exception as e:
         print(f"An error occurred: {str(e)}")
 
 if __name__ == "__main__":
-    run_sap_desktop_flow()
+    run_complete_sap_flow()
