@@ -1,1 +1,68 @@
-## Sap extraction code
+from playwright.sync_api import sync_playwright
+import time
+
+def run_sap_login_flow():
+    # 1. Initialize the Playwright engine explicitly
+    pw = sync_playwright().start()
+    
+    print("Opening the App (Launching Browser)...")
+    # Launch Chromium maximized and visible
+    browser = pw.chromium.launch(headless=False, args=["--start-maximized"])
+    context = browser.new_context(viewport=None)
+    page = context.new_page()
+
+    try:
+        # URL PLACEHOLDER: Replace this link with your actual SAP Web address
+        sap_url = "https://your-company-sap-fiori-url.com"
+        page.goto(sap_url)
+        
+        # Wait for the initial page layout to settle
+        page.wait_for_load_state("domcontentloaded")
+        time.sleep(5) 
+
+        print("Action: Enter (To focus or bypass initial splash page)")
+        page.keyboard.press("Enter")
+        time.sleep(2)
+
+        print("Action: Typing User ID...")
+        # Replace 'YOUR_USER_ID' with your actual SAP username
+        page.keyboard.type("YOUR_USER_ID", delay=100) 
+        time.sleep(1)
+
+        print("Action: Tab")
+        page.keyboard.press("Tab")
+        time.sleep(1)
+
+        print("Action: Typing Password...")
+        # Replace 'YOUR_PASSWORD' with your actual SAP password
+        page.keyboard.type("YOUR_PASSWORD", delay=100)
+        time.sleep(1)
+
+        print("Action: Enter (Logging into SAP)")
+        page.keyboard.press("Enter")
+        
+        # Wait for the main SAP screen/command field to fully load after logging in
+        print("Waiting for SAP Home Command area to load...")
+        time.sleep(8) 
+
+        print("Action: Typing Transaction Code 'Zsal_reg'...")
+        page.keyboard.type("Zsal_reg", delay=100)
+        time.sleep(1)
+
+        print("Action: Enter (Executing Transaction)...")
+        page.keyboard.press("Enter")
+        
+        print("Flow complete! You are now inside the Zsal_reg transaction screen.")
+        time.sleep(5) # Keeps the window open briefly to view the screen
+
+    except Exception as e:
+        print(f"An error occurred during execution: {str(e)}")
+        
+    finally:
+        print("Closing browser session...")
+        context.close()
+        browser.close()
+        pw.stop()
+
+if __name__ == "__main__":
+    run_sap_login_flow()
