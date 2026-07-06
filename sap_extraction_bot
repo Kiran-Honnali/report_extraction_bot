@@ -6,8 +6,8 @@ import pygetwindow as gw
 # ==========================================
 # CONFIGURATION: CREDENTIALS & WAIT TIME
 # ==========================================
-SAP_USER = "YOUR_SAP_USER_ID"        
-SAP_PASSWORD = "YOUR_SAP_PASSWORD"  
+SAP_USER = "auditor" 
+SAP_PASSWORD = "kco123"
 VPN_DELAY = 10  
 # ==========================================
 
@@ -29,9 +29,10 @@ def run_complete_sap_flow():
         print("1. Navigating to the System Tray...")
         pyautogui.hotkey('win', 'b')
         time.sleep(0.5)
+        pyautogui.press('space')
 
         print("2. Moving right 4 times to highlight the Sophos menu arrow...")
-        for _ in range(4):
+        for _ in range(3):
             pyautogui.press('right')
             time.sleep(0.2) 
 
