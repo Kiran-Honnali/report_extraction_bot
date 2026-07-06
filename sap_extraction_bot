@@ -1,96 +1,120 @@
 import subprocess
 import pyautogui
 import time
+import pygetwindow as gw
 
 # ==========================================
-# CONFIGURATION: STORE YOUR SAP CREDENTIALS
+# CONFIGURATION: CREDENTIALS & WAIT TIME
 # ==========================================
 SAP_USER = "YOUR_SAP_USER_ID"        
 SAP_PASSWORD = "YOUR_SAP_PASSWORD"  
+VPN_DELAY = 10  
 # ==========================================
+
+def maximize_window(window_title_part):
+    """Finds a window by a part of its title and maximizes it."""
+    try:
+        windows = gw.getWindowsWithTitle(window_title_part)
+        if windows:
+            windows[0].maximize()
+            print(f"Successfully maximized window: '{window_title_part}'")
+            return True
+    except Exception as e:
+        print(f"Could not maximize '{window_title_part}': {str(e)}")
+    return False
 
 def run_complete_sap_flow():
     try:
         # --- STAGE 1: CONNECT SOPHOS VPN VIA KEYBOARD NAVIGATION ---
         print("1. Navigating to the System Tray...")
-        # Focus on the system tray taskbar area
         pyautogui.hotkey('win', 'b')
         time.sleep(0.5)
 
         print("2. Moving right 4 times to highlight the Sophos menu arrow...")
         for _ in range(4):
             pyautogui.press('right')
-            time.sleep(0.2) # Small delay between taps to ensure Windows registers it
+            time.sleep(0.2) 
 
         print("3. Action: Space (Opening the System Tray hidden icons menu)...")
         pyautogui.press('space')
-        time.sleep(2) # Wait for the small menu container popup to show up
+        time.sleep(2) 
 
-        print("4. Looking for the blue Sophos Tray Icon to open the dashboard...")
+        print("4. Looking for the Sophos Tray Icon via image recognition...")
+        # We still use the icon image here just to open the Sophos panel
         try:
-            # Locate the small Sophos icon inside the opened tray
             sophos_pos = pyautogui.locateOnScreen('sophos_icon.png', confidence=0.8)
             if sophos_pos:
                 pyautogui.click(sophos_pos)
                 print("Sophos management window opened.")
             else:
-                raise Exception("Sophos icon image missing from view context.")
+                raise Exception()
         except Exception:
-            print("Could not find icon via image template. Trying fallback click...")
-            pass
+            print("Could not find tray icon visually. Pressing Enter as a keyboard fallback...")
+            pyautogui.press('enter')
             
-        time.sleep(3) # Give the main Sophos dashboard window time to render
+        time.sleep(3) # Wait for Sophos window to physically exist
 
-        print("5. Clicking the blue 'Connect' button...")
-        try:
-            connect_pos = pyautogui.locateOnScreen('connect_btn.png', confidence=0.8)
-            pyautogui.click(connect_pos)
-            print("Connect button clicked!")
-        except Exception as e:
-            print("Could not locate the Connect button image. Make sure it isn't covered up.")
-            raise e
+        print("5. Maximizing Sophos Window to gain focus...")
+        maximize_window("Sophos Connect")
+        time.sleep(1)
 
-        # Wait 10 seconds to allow the VPN tunnel handshake to finish completely
-        print("Waiting for VPN network stabilization...")
-        time.sleep(10)
+        print("6. Navigating to the blue 'Connect' button via Tab...")
+        # Tabbing twice hits the main "Connect" button in the Sophos layout frame
+        pyautogui.press('tab')
+        time.sleep(0.3)
+        pyautogui.press('tab')
+        time.sleep(0.5)
+
+        print("7. Action: Space (Triggering the Connect button)...")
+        pyautogui.press('space')
+
+        print(f"Waiting exactly {VPN_DELAY} seconds for VPN network to stabilize...")
+        time.sleep(VPN_DELAY)
 
 
-        # --- STAGE 2: LAUNCH AND LOG INTO SAP GUI ---
-        print("6. Opening the App (SAP Logon)...")
+        # --- STAGE 2: LAUNCH, MAXIMIZE, AND LOG INTO SAP GUI ---
+        print("8. Opening the App (SAP Logon)...")
         sap_path = r"C:\Program Files (x86)\SAP\FrontEnd\SAPgui\saplogon.exe"
         subprocess.Popen(sap_path)
-        time.sleep(5)
+        time.sleep(3)
+        
+        maximize_window("SAP Logon")
+        time.sleep(2)
 
-        print("7. Action: Enter (Opens the default SAP system connection)")
+        print("9. Action: Enter (Opens the default SAP system connection)")
         pyautogui.press("enter")
         time.sleep(4)
+        
+        maximize_window("SAP")
 
-        print("8. Action: Entering User ID...")
+        print("10. Action: Entering User ID...")
         pyautogui.write(SAP_USER, interval=0.1) 
         time.sleep(1)
 
-        print("9. Action: Tab")
+        print("11. Action: Tab")
         pyautogui.press("tab")
         time.sleep(1)
 
-        print("10. Action: Entering Password...")
+        print("12. Action: Entering Password...")
         pyautogui.write(SAP_PASSWORD, interval=0.1)
         time.sleep(1)
 
-        print("11. Action: Enter (Logging into the SAP environment)")
+        print("13. Action: Enter (Logging into the SAP environment)")
         pyautogui.press("enter")
         
         print("Waiting for SAP Home Screen to load...")
-        time.sleep(8) 
+        time.sleep(6) 
+        
+        maximize_window("SAP Easy Access")
 
-        print("12. Action: Entering Transaction Code 'Zsal_reg'...")
+        print("14. Action: Entering Transaction Code 'Zsal_reg'...")
         pyautogui.write("Zsal_reg", interval=0.1)
         time.sleep(1)
 
-        print("13. Action: Enter (Executing Transaction)...")
+        print("15. Action: Enter (Executing Transaction)...")
         pyautogui.press("enter")
         
-        print("Flow execution successful! You are now sitting inside the Zsal_reg desktop view.")
+        print("Flow execution successful! Zero image dependencies for the connection step.")
         time.sleep(5)
 
     except Exception as e:
